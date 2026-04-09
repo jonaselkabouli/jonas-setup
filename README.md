@@ -1,26 +1,24 @@
-# Jonas Setup
+# Bike + Train Route Planner
 
-One-command terminal setup for macOS. Installs and configures:
+Find the fastest route combining cycling and train in Denmark. Enter your origin and destination, and the app finds nearby train stations, calculates bike routes to/from stations, and shows the optimal combined journey.
 
-- **Homebrew** (package manager)
-- **iTerm2** (terminal) with custom "Jonas Style" profile
-- **Oh My Zsh** (shell framework)
-- **Starship** (prompt)
-- **Hack Nerd Font** (terminal font)
-- **CLI tools**: fzf, zoxide, eza, bat
-- **Plugins**: zsh-autosuggestions, zsh-syntax-highlighting
+Built for the Copenhagen / Charlottenlund area but works anywhere with OpenStreetMap data.
 
-## Usage
+## How it works
 
-Open Terminal and run:
+1. Enter origin and destination (with autocomplete)
+2. Finds train stations near both locations (via Overpass/OpenStreetMap)
+3. Calculates bike routes to/from stations (via OSRM)
+4. Shows the best combined bike + train + bike route on the map
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/jonaselkabouli/jonas-setup/main/setup.sh | bash
-```
+## Tech
 
-## After running
+Single HTML file, no build step, no API keys needed:
+- **Leaflet.js** — interactive map
+- **OSRM** — bike routing
+- **Overpass API** — train station lookup
+- **Nominatim** — geocoding/autocomplete
 
-1. Quit Terminal completely
-2. Open **iTerm2**
-3. Go to iTerm2 → Settings → Profiles → select **Jonas Style**
-4. Run `source ~/.zshrc`
+## Run locally
+
+Just open `index.html` in a browser.
