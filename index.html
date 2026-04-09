@@ -44,6 +44,8 @@
     .suggestions div:hover, .suggestions div:active { background: hsl(210 40% 96.1%); }
     .suggestions div:last-child { border-bottom: none; }
     .emoji-icon { background: none !important; border: none !important; }
+
+    /* Map legend */
     .map-legend {
       position: absolute; bottom: 24px; left: 12px; z-index: 1000;
       background: white; border-radius: 8px; padding: 8px 12px;
@@ -53,6 +55,8 @@
     .map-legend .leg { display: flex; align-items: center; gap: 6px; }
     .map-legend .leg + .leg { margin-top: 4px; }
     .map-legend .line { width: 20px; height: 4px; border-radius: 2px; }
+
+    /* Mobile: stack inputs */
     @media (max-width: 640px) {
       .controls-inner { flex-direction: column !important; }
       .controls-inner > div, .controls-inner > button { min-width: 100% !important; }
@@ -62,6 +66,7 @@
 </head>
 <body class="bg-background text-foreground">
   <div id="app" class="flex flex-col h-screen">
+    <!-- Header (compact on mobile) -->
     <header class="border-b bg-card px-4 sm:px-6 py-3">
       <div class="flex items-center gap-2.5">
         <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground text-xs font-bold shrink-0">BT</div>
@@ -71,12 +76,15 @@
         </div>
       </div>
     </header>
+
+    <!-- Controls -->
     <div class="border-b bg-card px-4 sm:px-6 py-3 z-[1000]">
       <div class="flex gap-2 sm:gap-3 flex-wrap items-end controls-inner">
         <div class="flex flex-col gap-1 flex-1 min-w-[140px]">
           <label for="origin" class="text-xs sm:text-sm font-medium leading-none">From</label>
           <div class="relative">
-            <input type="text" id="origin" placeholder="e.g. Charlottenlund" autocomplete="off"
+            <input type="text" id="origin" placeholder="e.g. Charlottenlund"
+              autocomplete="off"
               class="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
             <div class="suggestions" id="originSuggestions"></div>
           </div>
@@ -84,7 +92,8 @@
         <div class="flex flex-col gap-1 flex-1 min-w-[140px]">
           <label for="destination" class="text-xs sm:text-sm font-medium leading-none">To</label>
           <div class="relative">
-            <input type="text" id="destination" placeholder="e.g. Roskilde" autocomplete="off"
+            <input type="text" id="destination" placeholder="e.g. Roskilde"
+              autocomplete="off"
               class="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
             <div class="suggestions" id="destSuggestions"></div>
           </div>
@@ -95,10 +104,12 @@
         </button>
       </div>
     </div>
+
+    <!-- Map -->
     <div id="map" class="relative">
       <div id="instructions" class="absolute inset-0 flex items-center justify-center z-[500] pointer-events-none">
         <div class="bg-card/80 backdrop-blur-sm border rounded-lg px-5 py-3 text-center mx-4">
-          <p class="text-sm text-muted-foreground">Enter origin and destination to find the best bike + train route</p>
+          <p class="text-sm text-muted-foreground">Enter addresses or tap the map to set origin &amp; destination</p>
         </div>
       </div>
       <div class="map-legend" id="legend">
@@ -106,7 +117,11 @@
         <div class="leg"><span class="line" style="background:#2563eb;background-image:repeating-linear-gradient(90deg,#2563eb 0,#2563eb 6px,transparent 6px,transparent 10px)"></span> Train</div>
       </div>
     </div>
+
+    <!-- Results -->
     <div id="results" class="hidden border-t bg-card max-h-[40vh] overflow-y-auto"></div>
+
+    <!-- Loading Status -->
     <div id="status" class="hidden fixed inset-0 z-[2000] items-center justify-center bg-black/20 backdrop-blur-sm">
       <div class="bg-card border rounded-lg shadow-lg px-5 py-3 flex items-center gap-3 mx-4">
         <svg class="animate-spin h-5 w-5 text-primary shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -117,81 +132,111 @@
       </div>
     </div>
   </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    // --- Map Setup ---
     const map = L.map('map', { zoomControl: false }).setView([55.73, 12.57], 12);
+    // Add zoom control to bottom-right on mobile
     L.control.zoom({ position: 'topright' }).addTo(map);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
     const layers = L.layerGroup().addTo(map);
 
+    // --- Embedded Danish train stations (no API dependency) ---
     const STATIONS = [
-      {name:"K\u00f8benhavn H",lat:55.6726,lon:12.5649},{name:"Vesterport",lat:55.6770,lon:12.5620},
-      {name:"N\u00f8rreport",lat:55.6837,lon:12.5717},{name:"\u00d8sterport",lat:55.6927,lon:12.5879},
-      {name:"Nordhavn",lat:55.7043,lon:12.5930},{name:"Svanem\u00f8llen",lat:55.7100,lon:12.5720},
+      // S-tog: Main line
+      {name:"København H",lat:55.6726,lon:12.5649},{name:"Vesterport",lat:55.6770,lon:12.5620},
+      {name:"Nørreport",lat:55.6837,lon:12.5717},{name:"Østerport",lat:55.6927,lon:12.5879},
+      {name:"Nordhavn",lat:55.7043,lon:12.5930},{name:"Svanemøllen",lat:55.7100,lon:12.5720},
       {name:"Hellerup",lat:55.7310,lon:12.5720},{name:"Bernstorffsvej",lat:55.7460,lon:12.5630},
-      {name:"Gentofte",lat:55.7530,lon:12.5470},{name:"J\u00e6gersborg",lat:55.7600,lon:12.5380},
+      {name:"Gentofte",lat:55.7530,lon:12.5470},{name:"Jægersborg",lat:55.7600,lon:12.5380},
       {name:"Lyngby",lat:55.7710,lon:12.5060},{name:"Sorgenfri",lat:55.7760,lon:12.4930},
       {name:"Virum",lat:55.7860,lon:12.4700},{name:"Holte",lat:55.8110,lon:12.4690},
-      {name:"Birker\u00f8d",lat:55.8420,lon:12.4370},{name:"Aller\u00f8d",lat:55.8650,lon:12.3600},
-      {name:"Hiller\u00f8d",lat:55.9280,lon:12.3100},
+      {name:"Birkerød",lat:55.8420,lon:12.4370},{name:"Allerød",lat:55.8650,lon:12.3600},
+      {name:"Hillerød",lat:55.9280,lon:12.3100},
+      // S-tog: Charlottenlund line
       {name:"Charlottenlund",lat:55.7450,lon:12.5800},{name:"Ordrup",lat:55.7510,lon:12.5850},
       {name:"Klampenborg",lat:55.7690,lon:12.5790},
+      // S-tog: Farum line
       {name:"Ryparken",lat:55.7070,lon:12.5560},{name:"Emdrup",lat:55.7130,lon:12.5370},
-      {name:"Dysseg\u00e5rd",lat:55.7220,lon:12.5250},{name:"Vangede",lat:55.7290,lon:12.5150},
-      {name:"Buddinge",lat:55.7390,lon:12.5010},{name:"Steng\u00e5rden",lat:55.7390,lon:12.4770},
-      {name:"Bagsv\u00e6rd",lat:55.7550,lon:12.4510},{name:"Skovbrynet",lat:55.7620,lon:12.4350},
-      {name:"Hareskov",lat:55.7770,lon:12.4060},{name:"V\u00e6rl\u00f8se",lat:55.7840,lon:12.3710},
+      {name:"Dyssegård",lat:55.7220,lon:12.5250},{name:"Vangede",lat:55.7290,lon:12.5150},
+      {name:"Buddinge",lat:55.7390,lon:12.5010},{name:"Stengården",lat:55.7390,lon:12.4770},
+      {name:"Bagsværd",lat:55.7550,lon:12.4510},{name:"Skovbrynet",lat:55.7620,lon:12.4350},
+      {name:"Hareskov",lat:55.7770,lon:12.4060},{name:"Værløse",lat:55.7840,lon:12.3710},
       {name:"Farum",lat:55.8090,lon:12.3650},
+      // S-tog: Frederikssund line
       {name:"Peter Bangsvej",lat:55.6810,lon:12.5000},{name:"Flintholm",lat:55.6820,lon:12.4880},
-      {name:"Vanl\u00f8se",lat:55.6850,lon:12.4620},{name:"Jyllingevej",lat:55.6870,lon:12.4420},
+      {name:"Vanløse",lat:55.6850,lon:12.4620},{name:"Jyllingevej",lat:55.6870,lon:12.4420},
       {name:"Islev",lat:55.6960,lon:12.4230},{name:"Husum",lat:55.7040,lon:12.4460},
       {name:"Herlev",lat:55.7210,lon:12.4360},{name:"Skovlunde",lat:55.7300,lon:12.4000},
       {name:"Ballerup",lat:55.7310,lon:12.3700},{name:"Malmparken",lat:55.7400,lon:12.3490},
-      {name:"M\u00e5l\u00f8v",lat:55.7520,lon:12.3240},
+      {name:"Måløv",lat:55.7520,lon:12.3240},
+      // S-tog: Køge line
       {name:"Valby",lat:55.6640,lon:12.5100},{name:"Ny Ellebjerg",lat:55.6570,lon:12.5230},
-      {name:"Sj\u00e6l\u00f8r",lat:55.6570,lon:12.5360},{name:"Sydhavn",lat:55.6530,lon:12.5440},
-      {name:"Dansh\u00f8j",lat:55.6530,lon:12.4990},
-      {name:"Skodsborg",lat:55.8220,lon:12.5710},{name:"Vedb\u00e6k",lat:55.8540,lon:12.5640},
+      {name:"Sjælør",lat:55.6570,lon:12.5360},{name:"Sydhavn",lat:55.6530,lon:12.5440},
+      {name:"Danshøj",lat:55.6530,lon:12.4990},
+      // Kystbanen (Coastal line)
+      {name:"Skodsborg",lat:55.8220,lon:12.5710},{name:"Vedbæk",lat:55.8540,lon:12.5640},
       {name:"Rungsted Kyst",lat:55.8780,lon:12.5370},{name:"Kokkedal",lat:55.9150,lon:12.4950},
-      {name:"Niv\u00e5",lat:55.9380,lon:12.5060},{name:"Humlebæk",lat:55.9620,lon:12.5320},
-      {name:"Helsing\u00f8r",lat:56.0350,lon:12.6110},
+      {name:"Nivå",lat:55.9380,lon:12.5060},{name:"Humlebæk",lat:55.9620,lon:12.5320},
+      {name:"Helsingør",lat:56.0350,lon:12.6110},
+      // Regional (Zealand)
       {name:"Glostrup",lat:55.6650,lon:12.3940},{name:"Albertslund",lat:55.6550,lon:12.3500},
-      {name:"Taastrup",lat:55.6530,lon:12.2920},{name:"H\u00f8je Taastrup",lat:55.6490,lon:12.2700},
+      {name:"Taastrup",lat:55.6530,lon:12.2920},{name:"Høje Taastrup",lat:55.6490,lon:12.2700},
       {name:"Hedehusene",lat:55.6530,lon:12.2000},{name:"Roskilde",lat:55.6420,lon:12.0877},
-      {name:"Lejre",lat:55.6050,lon:11.9700},{name:"Holb\u00e6k",lat:55.7130,lon:11.7180},
+      {name:"Lejre",lat:55.6050,lon:11.9700},{name:"Holbæk",lat:55.7130,lon:11.7180},
       {name:"Kalundborg",lat:55.6810,lon:11.0840},{name:"Ringsted",lat:55.4420,lon:11.7900},
-      {name:"Sor\u00f8",lat:55.4320,lon:11.5550},{name:"Slagelse",lat:55.4050,lon:11.3530},
-      {name:"Kors\u00f8r",lat:55.3300,lon:11.1390},{name:"N\u00e6stved",lat:55.2330,lon:11.7720},
-      {name:"K\u00f8ge",lat:55.4570,lon:12.1770},{name:"K\u00f8ge Nord",lat:55.4890,lon:12.1720},
+      {name:"Sorø",lat:55.4320,lon:11.5550},{name:"Slagelse",lat:55.4050,lon:11.3530},
+      {name:"Korsør",lat:55.3300,lon:11.1390},{name:"Næstved",lat:55.2330,lon:11.7720},
+      {name:"Køge",lat:55.4570,lon:12.1770},{name:"Køge Nord",lat:55.4890,lon:12.1720},
       {name:"Frederikssund",lat:55.8360,lon:12.0680},
+      // Intercity (Jutland/Funen)
       {name:"Odense",lat:55.4030,lon:10.3880},{name:"Fredericia",lat:55.5710,lon:9.7520},
       {name:"Kolding",lat:55.4940,lon:9.4730},{name:"Vejle",lat:55.7110,lon:9.5350},
       {name:"Horsens",lat:55.8610,lon:9.8500},{name:"Skanderborg",lat:56.0370,lon:9.9300},
       {name:"Aarhus H",lat:56.1500,lon:10.2070},{name:"Randers",lat:56.4620,lon:10.0360},
       {name:"Aalborg",lat:57.0430,lon:9.9170},{name:"Esbjerg",lat:55.4760,lon:8.4530},
       {name:"Herning",lat:56.1370,lon:8.9730},{name:"Viborg",lat:56.4530,lon:9.4000},
-      {name:"Lufthavnen (CPH)",lat:55.6181,lon:12.6561},{name:"T\u00e5rnby",lat:55.6300,lon:12.6040},
+      // Airport / metro-adjacent
+      {name:"Lufthavnen (CPH)",lat:55.6181,lon:12.6561},{name:"Tårnby",lat:55.6300,lon:12.6040},
       {name:"Kastrup",lat:55.6380,lon:12.6360},
-      {name:"Malm\u00f6 Central",lat:55.6093,lon:13.0007},{name:"Lund C",lat:55.7080,lon:13.1870},
+      // Sweden (Øresund trains)
+      {name:"Malmö Central",lat:55.6093,lon:13.0007},{name:"Lund C",lat:55.7080,lon:13.1870},
       {name:"Hyllie",lat:55.5620,lon:13.0040},{name:"Triangeln",lat:55.5950,lon:13.0020},
     ];
 
+    // --- Geocoding with Nominatim ---
     let debounceTimer;
     async function geocodeSearch(query) {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=dk,se,de`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=dk,se,de&addressdetails=1`
       );
       if (!res.ok) throw new Error('Geocoding failed');
       return res.json();
     }
 
+    async function reverseGeocode(lat, lon) {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18`
+        );
+        if (!res.ok) return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+        const data = await res.json();
+        return data.display_name || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+      } catch (e) { return `${lat.toFixed(4)}, ${lon.toFixed(4)}`; }
+    }
+
     function setupAutocomplete(inputId, suggestionsId) {
       const input = document.getElementById(inputId);
       const suggestions = document.getElementById(suggestionsId);
+
       input.addEventListener('input', () => {
         clearTimeout(debounceTimer);
+        // Clear stored coords when user types new text
+        delete input.dataset.lat;
+        delete input.dataset.lon;
         const q = input.value.trim();
         if (q.length < 3) { suggestions.innerHTML = ''; return; }
         debounceTimer = setTimeout(async () => {
@@ -211,11 +256,48 @@
           } catch (e) { console.warn('Autocomplete error:', e); }
         }, 300);
       });
+
       input.addEventListener('blur', () => setTimeout(() => suggestions.innerHTML = '', 200));
     }
+
     setupAutocomplete('origin', 'originSuggestions');
     setupAutocomplete('destination', 'destSuggestions');
 
+    // --- Tap map to set origin/destination ---
+    let tapMode = null; // 'origin' or 'destination'
+    const tapMarkers = { origin: null, destination: null };
+
+    // First tap = origin, second tap = destination
+    map.on('click', async function(e) {
+      const { lat, lng: lon } = e.latlng;
+      const originInput = document.getElementById('origin');
+      const destInput = document.getElementById('destination');
+
+      // Determine which field to fill: origin first, then destination
+      const target = (!originInput.dataset.lat) ? 'origin' : (!destInput.dataset.lat) ? 'destination' : 'origin';
+      const input = target === 'origin' ? originInput : destInput;
+
+      input.dataset.lat = lat;
+      input.dataset.lon = lon;
+      input.value = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+
+      // Show temporary marker
+      if (tapMarkers[target]) map.removeLayer(tapMarkers[target]);
+      const color = target === 'origin' ? '#16a34a' : '#dc2626';
+      const label = target === 'origin' ? 'A' : 'B';
+      tapMarkers[target] = L.marker([lat, lon], {
+        icon: L.divIcon({
+          html: `<div style="background:${color};color:white;border:2px solid ${color};border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,0.2)">${label}</div>`,
+          className: 'emoji-icon', iconSize: [30, 30], iconAnchor: [15, 15]
+        })
+      }).addTo(map);
+
+      // Reverse geocode in background
+      const name = await reverseGeocode(lat, lon);
+      input.value = name.split(',').slice(0, 3).join(',');
+    });
+
+    // --- Haversine distance (km) ---
     function haversine(lat1, lon1, lat2, lon2) {
       const R = 6371;
       const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -226,6 +308,7 @@
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
+    // --- Find nearby stations from embedded data ---
     function findTrainStations(lat, lon, radiusKm = 15) {
       return STATIONS
         .map(s => ({ ...s, dist: haversine(lat, lon, s.lat, s.lon) }))
@@ -233,6 +316,7 @@
         .sort((a, b) => a.dist - b.dist);
     }
 
+    // --- Get bike route via OSRM, with straight-line fallback ---
     async function getBikeRoute(fromLat, fromLon, toLat, toLon) {
       try {
         const coords = `${fromLon},${fromLat};${toLon},${toLat}`;
@@ -244,25 +328,31 @@
             const route = data.routes[0];
             return {
               distance: route.distance,
-              duration: route.distance / 4.2,
+              duration: route.distance / 4.2, // ~15 km/h avg cycling speed
               geometry: route.geometry
             };
           }
         }
       } catch (e) { console.warn('OSRM failed, using fallback:', e); }
+      // Fallback: straight-line with 1.3x detour factor
       const dist = haversine(fromLat, fromLon, toLat, toLon) * 1000 * 1.3;
       return {
         distance: dist,
         duration: dist / 4.2,
-        geometry: { type: 'LineString', coordinates: [[fromLon, fromLat], [toLon, toLat]] }
+        geometry: {
+          type: 'LineString',
+          coordinates: [[fromLon, fromLat], [toLon, toLat]]
+        }
       };
     }
 
+    // --- Estimate train time (80 km/h avg with stops) ---
     function estimateTrainTime(fromStation, toStation) {
       const dist = haversine(fromStation.lat, fromStation.lon, toStation.lat, toStation.lon);
       return (dist / 80) * 3600;
     }
 
+    // --- Format helpers ---
     function formatDuration(seconds) {
       const mins = Math.round(seconds / 60);
       if (mins < 60) return `${mins} min`;
@@ -272,6 +362,7 @@
       return meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`;
     }
 
+    // --- Status helpers ---
     function showStatus(msg) {
       document.getElementById('statusText').textContent = msg;
       document.getElementById('status').classList.remove('hidden');
@@ -282,6 +373,7 @@
       document.getElementById('status').classList.remove('flex');
     }
 
+    // --- Main route finding ---
     async function findRoute() {
       const originInput = document.getElementById('origin');
       const destInput = document.getElementById('destination');
@@ -325,7 +417,7 @@
         if (!originStations.length) throw new Error('No train stations found near origin (15 km radius)');
         if (!destStations.length) throw new Error('No train stations found near destination (15 km radius)');
 
-        showStatus('Calculating bike routes...');
+        showStatus(`Calculating bike routes...`);
 
         const originTop = originStations.slice(0, 3);
         const destTop = destStations.slice(0, 3);
@@ -336,13 +428,17 @@
         for (const oStation of originTop) {
           for (const dStation of destTop) {
             if (oStation.name === dStation.name) continue;
+
             const [bikeToStation, bikeFromStation] = await Promise.all([
               getBikeRoute(oLat, oLon, oStation.lat, oStation.lon),
               getBikeRoute(dStation.lat, dStation.lon, dLat, dLon)
             ]);
+
             if (!bikeToStation || !bikeFromStation) continue;
+
             const trainTime = estimateTrainTime(oStation, dStation);
             const totalTime = bikeToStation.duration + trainTime + bikeFromStation.duration;
+
             if (totalTime < bestTotal) {
               bestTotal = totalTime;
               bestRoute = { bikeToStation, bikeFromStation, trainTime, originStation: oStation, destStation: dStation, totalTime };
@@ -352,31 +448,39 @@
 
         if (!bestRoute) throw new Error('Could not find a valid combined route');
 
+        // --- Draw on map ---
         layers.clearLayers();
+        // Remove tap markers
+        if (tapMarkers.origin) { map.removeLayer(tapMarkers.origin); tapMarkers.origin = null; }
+        if (tapMarkers.destination) { map.removeLayer(tapMarkers.destination); tapMarkers.destination = null; }
 
+        // Bike leg 1 (GREEN - solid)
         L.geoJSON(bestRoute.bikeToStation.geometry, {
           style: { color: '#16a34a', weight: 6, opacity: 0.9, lineCap: 'round' }
         }).addTo(layers);
 
+        // Train leg (BLUE - dashed)
         L.polyline(
           [[bestRoute.originStation.lat, bestRoute.originStation.lon],
            [bestRoute.destStation.lat, bestRoute.destStation.lon]],
           { color: '#2563eb', weight: 5, opacity: 0.9, dashArray: '12, 8', lineCap: 'round' }
         ).addTo(layers);
 
+        // Bike leg 2 (GREEN - solid)
         L.geoJSON(bestRoute.bikeFromStation.geometry, {
           style: { color: '#16a34a', weight: 6, opacity: 0.9, lineCap: 'round' }
         }).addTo(layers);
 
+        // Markers
         const makeIcon = (label, bg) => L.divIcon({
           html: `<div style="background:${bg || 'white'};color:${bg ? 'white' : '#1a1a2e'};border:2px solid ${bg || '#1a1a2e'};border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,0.2)">${label}</div>`,
           className: 'emoji-icon', iconSize: [30, 30], iconAnchor: [15, 15]
         });
 
         L.marker([oLat, oLon], { icon: makeIcon('A', '#16a34a') }).addTo(layers).bindPopup('Start');
-        L.marker([bestRoute.originStation.lat, bestRoute.originStation.lon], { icon: makeIcon('\ud83d\ude86') })
+        L.marker([bestRoute.originStation.lat, bestRoute.originStation.lon], { icon: makeIcon('🚆') })
           .addTo(layers).bindPopup(`Board: ${bestRoute.originStation.name}`);
-        L.marker([bestRoute.destStation.lat, bestRoute.destStation.lon], { icon: makeIcon('\ud83d\ude86') })
+        L.marker([bestRoute.destStation.lat, bestRoute.destStation.lon], { icon: makeIcon('🚆') })
           .addTo(layers).bindPopup(`Exit: ${bestRoute.destStation.name}`);
         L.marker([dLat, dLon], { icon: makeIcon('B', '#dc2626') }).addTo(layers).bindPopup('Destination');
 
@@ -386,8 +490,10 @@
           [bestRoute.destStation.lat, bestRoute.destStation.lon]
         ], { padding: [40, 40] });
 
+        // Show legend
         legendEl.style.display = 'block';
 
+        // --- Show results ---
         const trainDist = haversine(
           bestRoute.originStation.lat, bestRoute.originStation.lon,
           bestRoute.destStation.lat, bestRoute.destStation.lon
@@ -399,19 +505,19 @@
             <div class="flex gap-2 sm:gap-3 flex-wrap mb-2 sm:mb-3 results-cards">
               <div class="flex-1 min-w-[120px] rounded-lg border bg-green-50 border-green-200 p-2.5 sm:p-3">
                 <div class="text-xs sm:text-sm font-medium text-green-900">
-                  \ud83d\udeb2 Bike to ${bestRoute.originStation.name}
+                  🚲 Bike to ${bestRoute.originStation.name}
                 </div>
                 <p class="text-xs text-green-700 mt-1">${formatDistance(bestRoute.bikeToStation.distance)} &middot; ${formatDuration(bestRoute.bikeToStation.duration)}</p>
               </div>
               <div class="flex-1 min-w-[120px] rounded-lg border bg-blue-50 border-blue-200 p-2.5 sm:p-3">
                 <div class="text-xs sm:text-sm font-medium text-blue-900">
-                  \ud83d\ude86 Train to ${bestRoute.destStation.name}
+                  🚆 Train to ${bestRoute.destStation.name}
                 </div>
                 <p class="text-xs text-blue-700 mt-1">~${trainDist.toFixed(1)} km &middot; ~${formatDuration(bestRoute.trainTime)}</p>
               </div>
               <div class="flex-1 min-w-[120px] rounded-lg border bg-green-50 border-green-200 p-2.5 sm:p-3">
                 <div class="text-xs sm:text-sm font-medium text-green-900">
-                  \ud83d\udeb2 Bike to destination
+                  🚲 Bike to destination
                 </div>
                 <p class="text-xs text-green-700 mt-1">${formatDistance(bestRoute.bikeFromStation.distance)} &middot; ${formatDuration(bestRoute.bikeFromStation.duration)}</p>
               </div>
