@@ -4,135 +4,129 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bike + Train Route Planner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            border: 'hsl(214.3 31.8% 91.4%)',
+            ring: 'hsl(222.2 84% 4.9%)',
+            background: 'hsl(0 0% 100%)',
+            foreground: 'hsl(222.2 84% 4.9%)',
+            primary: { DEFAULT: 'hsl(222.2 47.4% 11.2%)', foreground: 'hsl(210 40% 98%)' },
+            muted: { DEFAULT: 'hsl(210 40% 96.1%)', foreground: 'hsl(215.4 16.3% 46.9%)' },
+            accent: { DEFAULT: 'hsl(210 40% 96.1%)', foreground: 'hsl(222.2 47.4% 11.2%)' },
+            card: { DEFAULT: 'hsl(0 0% 100%)', foreground: 'hsl(222.2 84% 4.9%)' },
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
-
-    #app { display: flex; flex-direction: column; height: 100vh; }
-
-    header {
-      background: #1a1a2e; color: white; padding: 12px 20px;
-      display: flex; align-items: center; gap: 12px;
-    }
-    header h1 { font-size: 1.2rem; font-weight: 600; }
-    header .icon { font-size: 1.4rem; }
-
-    .controls {
-      background: white; padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; z-index: 1000;
-    }
-    .input-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
-    .input-group label { font-size: 0.8rem; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
-    .input-group input {
-      padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px;
-      font-size: 0.95rem; transition: border-color 0.2s;
-    }
-    .input-group input:focus { outline: none; border-color: #4a90d9; }
-
-    button#findRoute {
-      padding: 10px 24px; background: #4a90d9; color: white; border: none;
-      border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer;
-      transition: background 0.2s; white-space: nowrap;
-    }
-    button#findRoute:hover { background: #357abd; }
-    button#findRoute:disabled { background: #aaa; cursor: not-allowed; }
-
-    #map { flex: 1; }
-
-    #results {
-      background: white; padding: 16px 20px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
-      max-height: 220px; overflow-y: auto; display: none;
-    }
-    #results h2 { font-size: 1rem; margin-bottom: 8px; color: #1a1a2e; }
-    .route-summary { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
-    .route-leg {
-      flex: 1; min-width: 140px; padding: 10px; border-radius: 8px;
-      display: flex; flex-direction: column; gap: 4px;
-    }
-    .route-leg.bike { background: #e8f5e9; border-left: 4px solid #4caf50; }
-    .route-leg.train { background: #e3f2fd; border-left: 4px solid #2196f3; }
-    .route-leg .leg-title { font-weight: 600; font-size: 0.85rem; }
-    .route-leg .leg-detail { font-size: 0.8rem; color: #555; }
-    .total-time { font-weight: 700; font-size: 1.1rem; color: #1a1a2e; }
-
-    .status {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      background: white; padding: 20px 30px; border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 2000; display: none;
-      font-size: 0.95rem; text-align: center;
-    }
-    .status.show { display: block; }
-
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    #map { flex: 1; min-height: 0; }
+    .leaflet-container { font-family: inherit; }
     .suggestions {
-      position: absolute; background: white; border: 1px solid #ddd;
-      border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto;
-      z-index: 3000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      width: 100%;
+      position: absolute; left: 0; right: 0; top: 100%;
+      background: white; border: 1px solid hsl(214.3 31.8% 91.4%);
+      border-radius: 0 0 0.5rem 0.5rem; max-height: 200px; overflow-y: auto;
+      z-index: 3000; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     .suggestions div {
-      padding: 8px 12px; cursor: pointer; font-size: 0.9rem;
-      border-bottom: 1px solid #f0f0f0;
+      padding: 8px 12px; cursor: pointer; font-size: 0.875rem;
+      border-bottom: 1px solid hsl(214.3 31.8% 91.4%);
     }
-    .suggestions div:hover { background: #f0f8ff; }
-    .input-wrapper { position: relative; }
-
-    .instructions {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      text-align: center; color: #888; font-size: 1rem; z-index: 500;
-      pointer-events: none;
-    }
+    .suggestions div:hover { background: hsl(210 40% 96.1%); }
+    .suggestions div:last-child { border-bottom: none; }
+    .emoji-icon { background: none !important; border: none !important; }
   </style>
 </head>
-<body>
-  <div id="app">
-    <header>
-      <span class="icon">🚲🚆</span>
-      <h1>Bike + Train Route Planner</h1>
+<body class="bg-background text-foreground">
+  <div id="app" class="flex flex-col h-screen">
+    <!-- Header -->
+    <header class="border-b bg-card px-6 py-4">
+      <div class="flex items-center gap-3">
+        <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-primary-foreground text-sm font-bold">BT</div>
+        <div>
+          <h1 class="text-lg font-semibold tracking-tight">Bike + Train</h1>
+          <p class="text-sm text-muted-foreground">Find the fastest combined route</p>
+        </div>
+      </div>
     </header>
 
-    <div class="controls">
-      <div class="input-group">
-        <label>From</label>
-        <div class="input-wrapper">
-          <input type="text" id="origin" placeholder="e.g. Charlottenlund" autocomplete="off" />
-          <div class="suggestions" id="originSuggestions"></div>
+    <!-- Controls -->
+    <div class="border-b bg-card px-6 py-4 z-[1000]">
+      <div class="flex gap-3 flex-wrap items-end">
+        <div class="flex flex-col gap-1.5 flex-1 min-w-[200px]">
+          <label for="origin" class="text-sm font-medium leading-none">From</label>
+          <div class="relative">
+            <input type="text" id="origin" placeholder="e.g. Charlottenlund"
+              autocomplete="off"
+              class="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
+            <div class="suggestions" id="originSuggestions"></div>
+          </div>
         </div>
-      </div>
-      <div class="input-group">
-        <label>To</label>
-        <div class="input-wrapper">
-          <input type="text" id="destination" placeholder="e.g. København H" autocomplete="off" />
-          <div class="suggestions" id="destSuggestions"></div>
+        <div class="flex flex-col gap-1.5 flex-1 min-w-[200px]">
+          <label for="destination" class="text-sm font-medium leading-none">To</label>
+          <div class="relative">
+            <input type="text" id="destination" placeholder="e.g. Roskilde"
+              autocomplete="off"
+              class="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" />
+            <div class="suggestions" id="destSuggestions"></div>
+          </div>
         </div>
+        <button id="findRoute"
+          class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-6 disabled:pointer-events-none disabled:opacity-50">
+          Find Route
+        </button>
       </div>
-      <button id="findRoute">Find Route</button>
     </div>
 
-    <div id="map">
-      <div class="instructions" id="instructions">
-        Enter origin and destination to find the best bike + train route
+    <!-- Map -->
+    <div id="map" class="relative">
+      <div id="instructions" class="absolute inset-0 flex items-center justify-center z-[500] pointer-events-none">
+        <div class="bg-card/80 backdrop-blur-sm border rounded-lg px-6 py-4 text-center">
+          <p class="text-sm text-muted-foreground">Enter origin and destination to find the best bike + train route</p>
+        </div>
       </div>
     </div>
 
-    <div id="results"></div>
-    <div class="status" id="status"></div>
+    <!-- Results -->
+    <div id="results" class="hidden border-t bg-card"></div>
+
+    <!-- Loading Status -->
+    <div id="status" class="hidden fixed inset-0 z-[2000] flex items-center justify-center bg-black/20 backdrop-blur-sm">
+      <div class="bg-card border rounded-lg shadow-lg px-6 py-4 flex items-center gap-3">
+        <svg class="animate-spin h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span id="statusText" class="text-sm font-medium">Loading...</span>
+      </div>
+    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     // --- Map Setup ---
-    const map = L.map('map').setView([55.73, 12.57], 12); // Copenhagen / Charlottenlund
+    const map = L.map('map').setView([55.73, 12.57], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
-
     const layers = L.layerGroup().addTo(map);
 
     // --- Geocoding with Nominatim ---
     let debounceTimer;
     async function geocodeSearch(query) {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=dk,se,de`
+      );
+      if (!res.ok) throw new Error('Geocoding failed');
       return res.json();
     }
 
@@ -145,18 +139,20 @@
         const q = input.value.trim();
         if (q.length < 3) { suggestions.innerHTML = ''; return; }
         debounceTimer = setTimeout(async () => {
-          const results = await geocodeSearch(q);
-          suggestions.innerHTML = results.map(r =>
-            `<div data-lat="${r.lat}" data-lon="${r.lon}">${r.display_name}</div>`
-          ).join('');
-          suggestions.querySelectorAll('div').forEach(div => {
-            div.addEventListener('click', () => {
-              input.value = div.textContent;
-              input.dataset.lat = div.dataset.lat;
-              input.dataset.lon = div.dataset.lon;
-              suggestions.innerHTML = '';
+          try {
+            const results = await geocodeSearch(q);
+            suggestions.innerHTML = results.map(r =>
+              `<div data-lat="${r.lat}" data-lon="${r.lon}">${r.display_name}</div>`
+            ).join('');
+            suggestions.querySelectorAll('div').forEach(div => {
+              div.addEventListener('click', () => {
+                input.value = div.textContent;
+                input.dataset.lat = div.dataset.lat;
+                input.dataset.lon = div.dataset.lon;
+                suggestions.innerHTML = '';
+              });
             });
-          });
+          } catch (e) { console.warn('Autocomplete error:', e); }
         }, 300);
       });
 
@@ -169,28 +165,26 @@
     // --- Find train stations near a point using Overpass ---
     async function findTrainStations(lat, lon, radiusKm = 15) {
       const radiusM = radiusKm * 1000;
-      const query = `
-        [out:json][timeout:10];
-        (
-          node["railway"="station"](around:${radiusM},${lat},${lon});
-          node["railway"="halt"](around:${radiusM},${lat},${lon});
-        );
-        out body;
-      `;
+      const query = `[out:json][timeout:15];(node["railway"="station"](around:${radiusM},${lat},${lon});node["railway"="halt"](around:${radiusM},${lat},${lon}););out body;`;
       const res = await fetch('https://overpass-api.de/api/interpreter', {
         method: 'POST',
-        body: `data=${encodeURIComponent(query)}`
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(query)
       });
+      if (!res.ok) throw new Error('Station lookup failed');
       const data = await res.json();
       return data.elements
         .filter(e => e.tags && e.tags.name)
         .map(e => ({ name: e.tags.name, lat: e.lat, lon: e.lon }));
     }
 
-    // --- Get bike route from OSRM ---
+    // --- Get bike route via OSRM (public bicycle instance) ---
     async function getBikeRoute(fromLat, fromLon, toLat, toLon) {
-      const url = `https://router.project-osrm.org/route/v1/bike/${fromLon},${fromLat};${toLon},${toLat}?overview=full&geometries=geojson`;
+      // Use the public OSRM bicycle routing instance
+      const coords = `${fromLon},${fromLat};${toLon},${toLat}`;
+      const url = `https://routing.openstreetmap.de/routed-bike/route/v1/cycling/${coords}?overview=full&geometries=geojson`;
       const res = await fetch(url);
+      if (!res.ok) return null;
       const data = await res.json();
       if (!data.routes || !data.routes.length) return null;
       const route = data.routes[0];
@@ -201,32 +195,42 @@
       };
     }
 
-    // --- Haversine distance ---
+    // --- Haversine distance (km) ---
     function haversine(lat1, lon1, lat2, lon2) {
       const R = 6371;
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
-    // --- Estimate train time (rough: 80 km/h average including stops) ---
+    // --- Estimate train time (80 km/h avg with stops) ---
     function estimateTrainTime(fromStation, toStation) {
       const dist = haversine(fromStation.lat, fromStation.lon, toStation.lat, toStation.lon);
-      return (dist / 80) * 3600; // seconds
+      return (dist / 80) * 3600;
     }
 
     // --- Format helpers ---
     function formatDuration(seconds) {
       const mins = Math.round(seconds / 60);
       if (mins < 60) return `${mins} min`;
-      const h = Math.floor(mins / 60);
-      const m = mins % 60;
-      return `${h}h ${m}m`;
+      return `${Math.floor(mins / 60)}h ${mins % 60}m`;
     }
     function formatDistance(meters) {
-      if (meters < 1000) return `${Math.round(meters)} m`;
-      return `${(meters / 1000).toFixed(1)} km`;
+      return meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`;
+    }
+
+    // --- Status helpers ---
+    function showStatus(msg) {
+      document.getElementById('statusText').textContent = msg;
+      document.getElementById('status').classList.remove('hidden');
+      document.getElementById('status').classList.add('flex');
+    }
+    function hideStatus() {
+      document.getElementById('status').classList.add('hidden');
+      document.getElementById('status').classList.remove('flex');
     }
 
     // --- Main route finding ---
@@ -234,34 +238,39 @@
       const originInput = document.getElementById('origin');
       const destInput = document.getElementById('destination');
       const btn = document.getElementById('findRoute');
-      const statusEl = document.getElementById('status');
       const resultsEl = document.getElementById('results');
       const instrEl = document.getElementById('instructions');
+
+      if (!originInput.value.trim() || !destInput.value.trim()) {
+        alert('Please enter both origin and destination');
+        return;
+      }
 
       let oLat = parseFloat(originInput.dataset.lat);
       let oLon = parseFloat(originInput.dataset.lon);
       let dLat = parseFloat(destInput.dataset.lat);
       let dLon = parseFloat(destInput.dataset.lon);
 
-      // If no lat/lon stored, geocode the text
-      if (isNaN(oLat) || isNaN(oLon)) {
-        const results = await geocodeSearch(originInput.value);
-        if (!results.length) { alert('Could not find origin location'); return; }
-        oLat = parseFloat(results[0].lat); oLon = parseFloat(results[0].lon);
-      }
-      if (isNaN(dLat) || isNaN(dLon)) {
-        const results = await geocodeSearch(destInput.value);
-        if (!results.length) { alert('Could not find destination location'); return; }
-        dLat = parseFloat(results[0].lat); dLon = parseFloat(results[0].lon);
-      }
-
       btn.disabled = true;
-      instrEl.style.display = 'none';
-      statusEl.textContent = 'Finding train stations near you...';
-      statusEl.classList.add('show');
+      showStatus('Geocoding locations...');
 
       try {
-        // Find stations near origin and destination
+        if (isNaN(oLat) || isNaN(oLon)) {
+          const results = await geocodeSearch(originInput.value);
+          if (!results.length) throw new Error('Could not find origin location');
+          oLat = parseFloat(results[0].lat);
+          oLon = parseFloat(results[0].lon);
+        }
+        if (isNaN(dLat) || isNaN(dLon)) {
+          const results = await geocodeSearch(destInput.value);
+          if (!results.length) throw new Error('Could not find destination location');
+          dLat = parseFloat(results[0].lat);
+          dLon = parseFloat(results[0].lon);
+        }
+
+        instrEl.classList.add('hidden');
+        showStatus('Finding train stations nearby...');
+
         const [originStations, destStations] = await Promise.all([
           findTrainStations(oLat, oLon),
           findTrainStations(dLat, dLon)
@@ -270,9 +279,8 @@
         if (!originStations.length) throw new Error('No train stations found near origin');
         if (!destStations.length) throw new Error('No train stations found near destination');
 
-        statusEl.textContent = `Found ${originStations.length} + ${destStations.length} stations. Calculating routes...`;
+        showStatus(`Found ${originStations.length + destStations.length} stations. Calculating routes...`);
 
-        // Try top 3 closest stations from each end to find best combo
         const originTop = originStations
           .map(s => ({ ...s, dist: haversine(oLat, oLon, s.lat, s.lon) }))
           .sort((a, b) => a.dist - b.dist)
@@ -288,7 +296,6 @@
 
         for (const oStation of originTop) {
           for (const dStation of destTop) {
-            // Skip if same station
             if (oStation.name === dStation.name) continue;
 
             const [bikeToStation, bikeFromStation] = await Promise.all([
@@ -303,11 +310,7 @@
 
             if (totalTime < bestTotal) {
               bestTotal = totalTime;
-              bestRoute = {
-                bikeToStation, bikeFromStation, trainTime,
-                originStation: oStation, destStation: dStation,
-                totalTime
-              };
+              bestRoute = { bikeToStation, bikeFromStation, trainTime, originStation: oStation, destStation: dStation, totalTime };
             }
           }
         }
@@ -317,43 +320,37 @@
         // --- Draw on map ---
         layers.clearLayers();
 
-        // Bike leg 1 (green)
-        const bikeLine1 = L.geoJSON(bestRoute.bikeToStation.geometry, {
-          style: { color: '#4caf50', weight: 5, opacity: 0.8 }
+        L.geoJSON(bestRoute.bikeToStation.geometry, {
+          style: { color: '#16a34a', weight: 5, opacity: 0.85 }
         }).addTo(layers);
 
-        // Train leg (blue dashed)
-        const trainLine = L.polyline(
+        L.polyline(
           [[bestRoute.originStation.lat, bestRoute.originStation.lon],
            [bestRoute.destStation.lat, bestRoute.destStation.lon]],
-          { color: '#2196f3', weight: 4, opacity: 0.8, dashArray: '10, 10' }
+          { color: '#2563eb', weight: 4, opacity: 0.85, dashArray: '12, 8' }
         ).addTo(layers);
 
-        // Bike leg 2 (green)
-        const bikeLine2 = L.geoJSON(bestRoute.bikeFromStation.geometry, {
-          style: { color: '#4caf50', weight: 5, opacity: 0.8 }
+        L.geoJSON(bestRoute.bikeFromStation.geometry, {
+          style: { color: '#16a34a', weight: 5, opacity: 0.85 }
         }).addTo(layers);
 
-        // Markers
-        const bikeIcon = L.divIcon({ html: '🚲', className: 'emoji-icon', iconSize: [28, 28], iconAnchor: [14, 14] });
-        const trainIcon = L.divIcon({ html: '🚆', className: 'emoji-icon', iconSize: [28, 28], iconAnchor: [14, 14] });
-        const startIcon = L.divIcon({ html: '📍', className: 'emoji-icon', iconSize: [28, 28], iconAnchor: [14, 14] });
-        const endIcon = L.divIcon({ html: '🏁', className: 'emoji-icon', iconSize: [28, 28], iconAnchor: [14, 14] });
+        const makeIcon = (label) => L.divIcon({
+          html: `<div style="background:white;border:2px solid hsl(222.2 47.4% 11.2%);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,0.15)">${label}</div>`,
+          className: 'emoji-icon', iconSize: [32, 32], iconAnchor: [16, 16]
+        });
 
-        L.marker([oLat, oLon], { icon: startIcon }).addTo(layers).bindPopup('Start');
-        L.marker([bestRoute.originStation.lat, bestRoute.originStation.lon], { icon: trainIcon })
-          .addTo(layers).bindPopup(`Board: ${bestRoute.originStation.name}`);
-        L.marker([bestRoute.destStation.lat, bestRoute.destStation.lon], { icon: trainIcon })
-          .addTo(layers).bindPopup(`Alight: ${bestRoute.destStation.name}`);
-        L.marker([dLat, dLon], { icon: endIcon }).addTo(layers).bindPopup('Destination');
+        L.marker([oLat, oLon], { icon: makeIcon('A') }).addTo(layers).bindPopup('Start');
+        L.marker([bestRoute.originStation.lat, bestRoute.originStation.lon], { icon: makeIcon('🚆') })
+          .addTo(layers).bindPopup(`Board train: ${bestRoute.originStation.name}`);
+        L.marker([bestRoute.destStation.lat, bestRoute.destStation.lon], { icon: makeIcon('🚆') })
+          .addTo(layers).bindPopup(`Exit train: ${bestRoute.destStation.name}`);
+        L.marker([dLat, dLon], { icon: makeIcon('B') }).addTo(layers).bindPopup('Destination');
 
-        // Fit map to all points
-        const allPoints = [
+        map.fitBounds([
           [oLat, oLon], [dLat, dLon],
           [bestRoute.originStation.lat, bestRoute.originStation.lon],
           [bestRoute.destStation.lat, bestRoute.destStation.lon]
-        ];
-        map.fitBounds(allPoints, { padding: [50, 50] });
+        ], { padding: [50, 50] });
 
         // --- Show results ---
         const trainDist = haversine(
@@ -362,30 +359,44 @@
         );
 
         resultsEl.innerHTML = `
-          <h2>Best Route Found</h2>
-          <div class="route-summary">
-            <div class="route-leg bike">
-              <span class="leg-title">🚲 Bike to ${bestRoute.originStation.name}</span>
-              <span class="leg-detail">${formatDistance(bestRoute.bikeToStation.distance)} · ${formatDuration(bestRoute.bikeToStation.duration)}</span>
+          <div class="px-6 py-4">
+            <h2 class="text-sm font-semibold tracking-tight mb-3">Best Route Found</h2>
+            <div class="flex gap-3 flex-wrap mb-3">
+              <div class="flex-1 min-w-[160px] rounded-lg border bg-green-50 border-green-200 p-3">
+                <div class="flex items-center gap-1.5 text-sm font-medium text-green-900">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                  Bike to ${bestRoute.originStation.name}
+                </div>
+                <p class="text-xs text-green-700 mt-1">${formatDistance(bestRoute.bikeToStation.distance)} &middot; ${formatDuration(bestRoute.bikeToStation.duration)}</p>
+              </div>
+              <div class="flex-1 min-w-[160px] rounded-lg border bg-blue-50 border-blue-200 p-3">
+                <div class="flex items-center gap-1.5 text-sm font-medium text-blue-900">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+                  Train to ${bestRoute.destStation.name}
+                </div>
+                <p class="text-xs text-blue-700 mt-1">~${trainDist.toFixed(1)} km &middot; ~${formatDuration(bestRoute.trainTime)}</p>
+              </div>
+              <div class="flex-1 min-w-[160px] rounded-lg border bg-green-50 border-green-200 p-3">
+                <div class="flex items-center gap-1.5 text-sm font-medium text-green-900">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                  Bike to destination
+                </div>
+                <p class="text-xs text-green-700 mt-1">${formatDistance(bestRoute.bikeFromStation.distance)} &middot; ${formatDuration(bestRoute.bikeFromStation.duration)}</p>
+              </div>
             </div>
-            <div class="route-leg train">
-              <span class="leg-title">🚆 Train to ${bestRoute.destStation.name}</span>
-              <span class="leg-detail">~${trainDist.toFixed(1)} km · ~${formatDuration(bestRoute.trainTime)}</span>
-            </div>
-            <div class="route-leg bike">
-              <span class="leg-title">🚲 Bike to destination</span>
-              <span class="leg-detail">${formatDistance(bestRoute.bikeFromStation.distance)} · ${formatDuration(bestRoute.bikeFromStation.duration)}</span>
+            <div class="flex items-center gap-2 pt-2 border-t">
+              <span class="text-base font-bold tracking-tight">Total: ~${formatDuration(bestRoute.totalTime)}</span>
+              <span class="text-xs text-muted-foreground">(train time is estimated)</span>
             </div>
           </div>
-          <div class="total-time">Total: ~${formatDuration(bestRoute.totalTime)}</div>
         `;
-        resultsEl.style.display = 'block';
+        resultsEl.classList.remove('hidden');
 
       } catch (err) {
-        alert('Error: ' + err.message);
+        alert(err.message);
         console.error(err);
       } finally {
-        statusEl.classList.remove('show');
+        hideStatus();
         btn.disabled = false;
       }
     }
