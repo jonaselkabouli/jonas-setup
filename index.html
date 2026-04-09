@@ -162,27 +162,24 @@
     setupAutocomplete('origin', 'originSuggestions');
     setupAutocomplete('destination', 'destSuggestions');
 
-    // --- Find train stations near a point using Overpass ---
+    // --- Find train stations near a point using Overpass (GET for CORS) ---
     async function findTrainStations(lat, lon, radiusKm = 15) {
       const radiusM = radiusKm * 1000;
       const query = `[out:json][timeout:15];(node["railway"="station"](around:${radiusM},${lat},${lon});node["railway"="halt"](around:${radiusM},${lat},${lon}););out body;`;
-      const res = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'data=' + encodeURIComponent(query)
-      });
-      if (!res.ok) throw new Error('Station lookup failed');
+      const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Station lookup failed (' + res.status + ')');
       const data = await res.json();
       return data.elements
         .filter(e => e.tags && e.tags.name)
         .map(e => ({ name: e.tags.name, lat: e.lat, lon: e.lon }));
     }
 
-    // --- Get bike route via OSRM (public bicycle instance) ---
+    // --- Get bike route via OSRM ---
     async function getBikeRoute(fromLat, fromLon, toLat, toLon) {
-      // Use the public OSRM bicycle routing instance
       const coords = `${fromLon},${fromLat};${toLon},${toLat}`;
-      const url = `https://routing.openstreetmap.de/routed-bike/route/v1/cycling/${coords}?overview=full&geometries=geojson`;
+      // Use the main OSRM demo server (driving profile) and estimate bike time from distance
+      const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
       const res = await fetch(url);
       if (!res.ok) return null;
       const data = await res.json();
@@ -190,7 +187,7 @@
       const route = data.routes[0];
       return {
         distance: route.distance,
-        duration: route.duration,
+        duration: route.distance / 4.2, // ~15 km/h avg cycling speed
         geometry: route.geometry
       };
     }
